@@ -125,3 +125,21 @@ end
     Reduced field E/n in Td
 """
 en(fields) = fields.eabs ./ reshape(fields.ngas, 1, :) ./ co.Td
+
+
+"""
+    Charge computed from divergence of electric field.
+"""
+function charge(fields, mesh)
+    (;er, ez) = fields
+    (;l, m, n) = mesh
+    
+    rc = rcenter(mesh)
+    rf = rface(mesh)
+    der = @views diff(fields.er[l + 1: l + m + 1, l + 1: l + m] .* rf, dims=1)
+    dez = @views diff(fields.ez[l + 1: l + m, l + 1: l + m + 1], dims=2)
+    @show size(der) size(rc) size(dez)
+    q = co.epsilon_0 .* (der ./ rc .+ dez)
+
+    return q
+end
