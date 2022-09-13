@@ -23,7 +23,7 @@ export en, tobs, valid, zcenter, zface, rcenter, rface, zgrid, rgrid
     """
 
 const DATA_DIR = joinpath(@__DIR__, "..", "data")
-const NOTEBOOK_DIR = joinpath(@__DIR__, "..", "notebook")
+const NOTEBOOK_DIR = joinpath(@__DIR__, "..", "notebooks")
 
 include("tbatch.jl")
 include("constants.jl")
