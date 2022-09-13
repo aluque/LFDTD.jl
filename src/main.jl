@@ -31,6 +31,10 @@ function main(;end_t = nothing,
               τ1 = .4e-4,
               τ2 = .2e-4,
 
+              # Filenames atmospheric profiles
+              gas_density_fname = joinpath(DATA_DIR, "earth", "gas.dat"),
+              electron_density_fname = joinpath(DATA_DIR, "earth", "electrons.dat"),
+              
               output_dt = 1e-4,
               output_folder = "/tmp"
               )
@@ -40,8 +44,8 @@ function main(;end_t = nothing,
 
     fields = Fields(Float64, device, mesh)
 
-    load_gas_density!(fields, mesh, joinpath(DATA_DIR, "earth", "gas.dat"))
-    load_electron_density!(fields, mesh, joinpath(DATA_DIR, "earth", "electrons.dat"))
+    load_gas_density!(fields, mesh, gas_density_fname)
+    load_electron_density!(fields, mesh, electron_density_fname)
     init_fields(mesh, fields)
 
     # Set source properties
