@@ -12,7 +12,7 @@ You can run a jupyter notebook with an example simulation with
 ```julia
 julia> using LFDTD
 julia> using IJulia
-julia> notebook(LFDTD.NOTEBOOK_DIR)
+julia> notebook(dir=LFDTD.NOTEBOOK_DIR)
 ```
 
 If you have not installed IJulia, you will be asked whether to install it.  Note that with this procedure the notebook will be read-only so you cannot save your changes.  Select File -> Make a Copy... to start with a writtable notebook.
