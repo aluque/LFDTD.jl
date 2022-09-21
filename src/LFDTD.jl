@@ -10,11 +10,13 @@ using CUDA
 using Polyester
 using Interpolations
 using CSV
+using DSP
 using ProgressMeter
 
 ProgressMeter.ijulia_behavior(:append)
 
 export en, tobs, valid, zcenter, zface, rcenter, rface, zgrid, rgrid
+export BiGaussian, SoftStep
 
 @template DEFAULT =
     """
@@ -35,6 +37,7 @@ include("fdtd.jl")
 include("source.jl")
 include("observation.jl")
 include("io.jl")
+include("electrons.jl")
 include("timesteps.jl")
 include("main.jl")
 

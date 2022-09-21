@@ -2,6 +2,9 @@ function save(fname, mesh::Mesh, fields::Fields)
     jldsave(fname, compress=true; mesh, fields)
 end
 
+function saveobs(fname, observer)
+    jldsave(fname, compress=true; observer)
+end
 
 function meshvar(fields, mesh, var)
     vars = Dict(:en => (f -> en(f), true, true, "Reduced field (Td)"),

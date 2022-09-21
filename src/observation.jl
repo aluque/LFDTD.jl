@@ -103,7 +103,7 @@ function update_light_curve!(obs, device, mesh, fields, excrate, t, Δt,
                         
             # We are here assuming instantaneous de-excitation and neglecting
             # collisional quenching.
-            rW = r * ne[i1, j1] * ngas[j1] * lookup(excrate, eabs[i1, j1] / ngas[j1] / co.Td)
+            rW = ne[i1, j1] * ngas[j1] * lookup(excrate, eabs[i1, j1] / ngas[j1] / co.Td)
             rW *= nquench / (ngas[j1] + nquench)
             
             # Thanks to symmetry, integrate onlt half-circle
@@ -129,4 +129,12 @@ function update_light_curve!(obs, device, mesh, fields, excrate, t, Δt,
     end
 end
 
-light_curve(obs) = sum(obs.signal, dims=2)
+function light_curve(obs)
+    return sum(obs.signal, dims=2)
+end
+
+function light_curve(obs, decay)
+    s = light_curve(obs)
+    c = @. exp(-obs.τ[1:end-1] / decay) - exp(-obs.τ[2:end] / decay)
+    return conv(s, c)[begin:begin + length(s) - 1]
+end

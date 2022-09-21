@@ -94,6 +94,54 @@ end
 
 
 """
+    A representation of an axial source with soft-step polynomial functions
+"""
+Base.@kwdef struct SoftStep{T}
+    "Lowest altitude bound."
+    z0::T
+
+    "Upper altitude bound."
+    z1::T
+
+    "Peak current"
+    Ipeak::T
+
+    "Rise time"
+    rise::T
+
+    "decay"
+    decay::T
+end
+
+softstep(x) = x^2 * (2 - x)^2
+
+"""
+    Current (cross-sectional, in A) at time `t`.
+"""
+function current(source::SoftStep, t)
+    (;rise, decay, Ipeak) = source
+
+    if t < rise
+        return Ipeak * softstep(t / rise)
+    elseif t < rise + decay
+        return Ipeak * softstep(1 - (t - rise) / decay)
+    else
+        return zero(Ipeak)
+    end
+end
+
+
+"""
+    Compute the total charge transferred by a `source`.
+"""
+function total_charge(source::SoftStep)
+    (;rise, decay, Ipeak) = source
+
+    return 8 * Ipeak * (rise + decay) / 5
+end
+
+
+"""
    Add an on-axis source to jz
 """
 function add_source(device, mesh, fields, source, t)

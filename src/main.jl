@@ -4,20 +4,21 @@ function main(;end_t = nothing,
 
               # Dimensions of the domain
               R = 800 * co.kilo,
-              H = 110 * co.kilo,
+              H = 90 * co.kilo,
 
+              cells_per_km = 1,
+              
               # Cells in r- and z-directions
-              m = 800,
-              n = 110,
+              m = cells_per_km * ceil(Int, R / co.kilo),
+              n = cells_per_km * ceil(Int, H / co.kilo),
 
               # Cells in CPML layers
               l = 32,
 
               # Time step
-              dt = 1e-7,
+              dt = 2e-7,
 
-              # Location of the observer (r=L, z=K)
-              L = 84 * co.kilo,
+              # Altitude of the observer (r=L, z=K)
               K = 400 * co.kilo,
 
               # Field of view
@@ -25,18 +26,38 @@ function main(;end_t = nothing,
               fov = deg2rad(40),
               
               # Source properties:
-              Ipeak = 257.0 * co.kilo,
-              z0 = 10.0 * co.kilo,
-              z1 = 15.0 * co.kilo,
-              τ1 = .4e-4,
-              τ2 = .2e-4,
+              # source = BiGaussian(FromPeak; 
+              #                     Ipeak = 466.0 * co.kilo,
+              #                     z0 = 10.0 * co.kilo,
+              #                     z1 = 11.0 * co.kilo,
+              #                     τ1 = 20e-6,
+              #                     τ2 = 12.4e-6),
 
+              # ~event 3 in Bjorge-Engeland et al.
+              L = 462 * co.kilo,
+              source = SoftStep(Ipeak = 466.0 * co.kilo,
+                                z0 = 10.0 * co.kilo,
+                                z1 = 11.5 * co.kilo,
+                                rise = 12.4e-6,
+                                decay = 8.2e-6),
+
+              # L = 120 * co.kilo,
+              # source = SoftStep(Ipeak = 72.0 * co.kilo,
+              #                   z0 = 10.0 * co.kilo,
+              #                   z1 = 11.5 * co.kilo,
+              #                   rise = 11.6e-6,
+              #                   decay = 7e-6),
+              
               # Filenames atmospheric profiles
               gas_density_fname = joinpath(DATA_DIR, "earth", "gas.dat"),
-              electron_density_fname = joinpath(DATA_DIR, "earth", "electrons.dat"),
+              electron_density = LogInterpolatedElectronDensity(joinpath(DATA_DIR, "earth", "electrons.dat")),
               
               output_dt = 1e-4,
-              output_folder = "/tmp"
+              output_folder = "/tmp",
+
+              # Min. dielectric relaxation time to prevent instabilities
+              # (electron density is cropped at the corresponding value).
+              min_relax_time = 10 * dt
               )
 
     mesh = Mesh(R, H, m, n, l, dt)
@@ -45,11 +66,12 @@ function main(;end_t = nothing,
     fields = Fields(Float64, device, mesh)
 
     load_gas_density!(fields, mesh, gas_density_fname)
-    load_electron_density!(fields, mesh, electron_density_fname)
+    set_electron_density!(fields, mesh, electron_density)
+    crop_electron_density!(fields, mesh, min_relax_time)
+    
     init_fields(mesh, fields)
 
     # Set source properties
-    source = BiGaussian(FromPeak; Ipeak, z0, z1, τ1, τ2)
     @info "Total charge transferred by the source is [C]" Q=total_charge(source)
 
     # Load excitation rate for the N2(a1) state responsible for LBH emissions
@@ -63,7 +85,7 @@ function main(;end_t = nothing,
     kq = (0.79 * 1e-11 * co.centi^3 + 0.21 * 1e-10 * co.centi^3)
 
     # Einstein coeff (Liu 2004)
-    A = 5.5e-5
+    A = 1.8e4
 
     nquench = A / kq
     @info "Quenching density" nquench
@@ -74,6 +96,9 @@ function main(;end_t = nothing,
     nsteps = convert(Int, cld(end_t,  dt))
     
     t::Float64 = 0
+
+    # Ensure output_folder exists
+    isdir(output_folder) || mkpath(output_folder)
 
     # Write output at intervals output_dt
     output = TimeStepper(0.0, output_dt)
@@ -100,6 +125,10 @@ function main(;end_t = nothing,
         ProgressMeter.next!(progmeter, showvalues=[("Sim. time (ms)", t / co.milli),
                                                    (:saved_file, saved_file)])
     end
+
+    saved_file = joinpath(output_folder, "lbh.jld")
+    saveobs(saved_file, obs)
+    @info "Observer data saved to $(saved_file)"
     
     return (;mesh, fields, obs)
 end
@@ -131,13 +160,20 @@ end
 """
     Load electron density data
 """
-function load_electron_density!(fields, mesh, fname)
+function set_electron_density!(fields, mesh, electron_density)
     (;l, m, n) = mesh
-    f = CSV.File(fname, header=[:z, :ne])
-    interp = LinearInterpolation(f.z .* co.kilo, log.(f.ne .* co.centi^-3))
-    @views fields.ne[(l + 1):(l + m + 1), (l + 1):(l + n + 1)] .= reshape(exp.(interp.(zface(mesh))), (1, :))
+    @views fields.ne[(l + 1):(l + m + 1), (l + 1):(l + n + 1)] .= reshape(electron_density.(zface(mesh)), (1, :))
 
-    @info "Electron density loaded from $fname"
+end
+
+"""
+    Crops the electron density to ensure that the relaxation time does not
+    go below the provided value).
+"""
+function crop_electron_density!(fields, mesh, min_relax_time)
+    @info "Cropping electron density"
+    max_ne = @. fields.ngas * co.epsilon_0 / (co.elementary_charge * E_MOBILITY * min_relax_time)
+    fields.ne .= min.(fields.ne, reshape(max_ne, (1, :)))
 end
 
 
