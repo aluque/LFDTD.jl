@@ -1,7 +1,8 @@
 # Handling of electron density profiles.
 
 """
-    An electron density defined in terms of interpolated data.
+    An electron density defined in terms of data linearly interpolated in log
+    scale.
 """
 struct LogInterpolatedElectronDensity{I}
     interp::I
@@ -13,7 +14,10 @@ struct LogInterpolatedElectronDensity{I}
 end
 
 """
-    Load data from a file and construct a `LogInterpolatedElectronDensity`.
+    Load data from file `fname` and construct a `LogInterpolatedElectronDensity`.
+    Optionally, `z_scale` is a multiplicative factor for altitudes and
+    `ne_scale` is a multiplicative factor for electron density
+    (the resulting values are assumed to be in SI units).
 """
 function LogInterpolatedElectronDensity(fname::String; z_scale=co.kilo, ne_scale=co.centi^-3)
     f = CSV.File(fname, header=[:z, :ne])
