@@ -53,18 +53,28 @@ end
 
 """
     Check if point with cylindrical coordinates `r`, `z`, `θ` is within
-    the field of view of `obs`.
+    the field of view of `obs` (square fov).
 """
-function inside_fov(obs, r, z, θ)
+function inside_fov_rect(obs, r, z, θ)
     (;L, K, fov) = obs
     uz = K - z
     ux = L - r * cos(θ)
     uy = r * sin(θ)
     umax = uz * tan(fov) / sqrt(2)
 
-    return ux < umax && ux < umax
+    return uy < umax && ux < umax
 end
-    
+
+function inside_fov(obs, r, z, θ)
+    (;L, K, fov) = obs
+    uz = K - z
+    ux = L - r * cos(θ)
+    uy = r * sin(θ)
+    umax = uz * tan(fov)
+
+    return ux^2 + uy^2 < umax^2
+end
+
 """
    Updates the r and z-components of the electric current.
 """
