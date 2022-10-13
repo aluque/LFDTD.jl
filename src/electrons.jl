@@ -8,7 +8,7 @@ struct LogInterpolatedElectronDensity{I}
     interp::I
 
     function LogInterpolatedElectronDensity(z, ne)
-        interp = LinearInterpolation(z, log.(ne))
+        interp = LinearInterpolation(z, log.(ne), extrapolation_bc=Line())
         new{typeof(interp)}(interp)
     end
 end
