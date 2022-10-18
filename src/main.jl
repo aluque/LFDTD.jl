@@ -49,7 +49,7 @@ function main(;end_t = nothing,
               #                   decay = 7e-6),
               
               # Filenames atmospheric profiles
-              gas_density_fname = joinpath(DATA_DIR, "earth", "gas.dat"),
+              gas_density_fname = joinpath(DATA_DIR, "earth", "stdatm.dat"),
               electron_density = LogInterpolatedElectronDensity(joinpath(DATA_DIR, "earth", "electrons.dat")),
               
               output_dt = 1e-4,
@@ -149,7 +149,7 @@ function load_gas_density!(fields, mesh, fname)
     (;l, n) = mesh
     
     f = CSV.File(fname, header=[:z, :ngas])
-    interp = LinearInterpolation(f.z .* co.kilo, log.(f.ngas .* co.centi^-3))
+    interp = LinearInterpolation(f.z, log.(f.ngas))
     @views fields.ngas[(l + 1):(l + n + 1)] .= exp.(interp.(zface(mesh)))
     fields.ngas[l] = fields.ngas[l + 1]
     fields.ngas[l + n + 1] = fields.ngas[l + n]
