@@ -2,6 +2,8 @@
  Functions to compute the observed signal from a far-away observer (such as ASIM)
 =#
 
+N2_FRACTION = 0.79
+
 """
     Represent an observed located at a distance `L` from the central axes
     and at an altitude `K`.  It collects data at times given in `τ`.
@@ -85,7 +87,7 @@ function update_light_curve!(obs, device, mesh, fields, excrate, t, Δt,
     (;L, K, τ, signal) = obs
     Δτ = step(τ)
     
-    # We store contributions independently for each thread to enabe paralellism
+    # We store contributions independently for each thread to enable paralellism
     # This only makes sense if all contribs are summed later.
     range_θ = LinRange(0, π, ntheta)
     dθ = step(range_θ)
@@ -113,7 +115,9 @@ function update_light_curve!(obs, device, mesh, fields, excrate, t, Δt,
                         
             # We are here assuming instantaneous de-excitation and neglecting
             # collisional quenching.
-            rW = ne[i1, j1] * ngas[j1] * lookup(excrate, eabs[i1, j1] / ngas[j1] / co.Td)
+            
+            rW = (N2_FRACTION * ne[i1, j1] * ngas[j1] *
+                  lookup(excrate, eabs[i1, j1] / ngas[j1] / co.Td))
             rW *= nquench / (ngas[j1] + nquench)
             
             # Thanks to symmetry, integrate onlt half-circle
