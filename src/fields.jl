@@ -143,3 +143,31 @@ function charge(fields, mesh)
 
     return q
 end
+
+function photons(mesh, fields, excrate, nquench, zmin=50 * co.kilo)
+    (;R, H, m, n, l, dr, dz, dt) = mesh
+    (;eabs, ne, ngas) = fields
+
+    photons = zeros(size(eabs))
+
+        # Ignore emissions below zmin
+    jmin = ceil(Int, zmin / dz)
+    
+    @tbatch for j in jmin:n + 1
+        for i in 1:m + 1
+            i1 = i + l
+            j1 = j + l
+
+            r = (i - 1) * dr
+            z = (j - 1) * dz
+
+            # We are here assuming instantaneous de-excitation             
+            p = (N2_FRACTION * ne[i1, j1] * ngas[j1] *
+                 lookup(excrate, eabs[i1, j1] / ngas[j1] / co.Td))
+            p *= nquench / (ngas[j1] + nquench)
+            photons[i, j] = p
+        end
+    end
+
+    return photons
+end
