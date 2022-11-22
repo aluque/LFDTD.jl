@@ -31,11 +31,12 @@ end
 
 
 """ Compute the distance from a point (r, z, θ) to the observer `obs`. """
-distance(obs, r, z, θ) = sqrt((z - obs.K)^2 + (obs.L - r * cos(θ))^2)
+distance(obs, r, z, θ) = sqrt((z - obs.K)^2 + (obs.L - r * cos(θ))^2 + (r * sin(θ))^2)
 
 
 """ Observation times substracting the light-travel from the origin. """
-tobs(obs) = obs.τ .- distance(obs, 0, 0, 0) / co.c
+tobs(obs, z) = obs.τ .- distance(obs, 0, z, 0) / co.c
+tobs(obs) = tobs(obs, 0)
 
 
 """
@@ -87,8 +88,6 @@ function update_light_curve!(obs, device, mesh, fields, excrate, t, Δt,
     (;L, K, τ, signal) = obs
     Δτ = step(τ)
     
-    # We store contributions independently for each thread to enable paralellism
-    # This only makes sense if all contribs are summed later.
     range_θ = LinRange(0, π, ntheta)
     dθ = step(range_θ)
 
@@ -113,9 +112,7 @@ function update_light_curve!(obs, device, mesh, fields, excrate, t, Δt,
             
             dV = r * Δt * dr * dz * dθ / wi / wj / wt
                         
-            # We are here assuming instantaneous de-excitation and neglecting
-            # collisional quenching.
-            
+            # We are here assuming instantaneous de-excitation             
             rW = (N2_FRACTION * ne[i1, j1] * ngas[j1] *
                   lookup(excrate, eabs[i1, j1] / ngas[j1] / co.Td))
             rW *= nquench / (ngas[j1] + nquench)
