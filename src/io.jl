@@ -6,6 +6,10 @@ function saveobs(fname, observer)
     jldsave(fname, compress=true; observer)
 end
 
+function saveprobes(fname, locations, time, values)
+    jldsave(fname, compress=true; locations, time, values)
+end
+
 function meshvar(fields, mesh, var)
     vars = Dict(:en => (f -> en(f), true, true, "Reduced field (Td)"),
                 :eabs => (f -> f.eabs, true, true, "Field magnitude (V/m)"),

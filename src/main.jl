@@ -57,7 +57,9 @@ function main(;end_t = nothing,
 
               # Min. dielectric relaxation time to prevent instabilities
               # (electron density is cropped at the corresponding value).
-              min_relax_time = 10 * dt
+              min_relax_time = 10 * dt,
+
+              probe_locations = []
               )
 
     mesh = Mesh(R, H, m, n, l, dt)
@@ -107,11 +109,18 @@ function main(;end_t = nothing,
     emissions = TimeStepper(0.0, Δtobs)
     progmeter = Progress(nsteps)
     saved_file = ""
+
+    prob = [eltype(fields)[] for _ in probe_locations]
+    probidx = probeinds(probe_locations, mesh)
     
     for s in 1:nsteps
         atstep(output, t) do step
             saved_file = joinpath(output_folder, @sprintf("%.5d.jld", step))
             save(saved_file, mesh, fields)
+        end
+
+        for i in eachindex(prob)
+            push!(prob[i], fields.eabs[probidx[i]])
         end
         
         atstep(emissions, t) do step
@@ -130,6 +139,11 @@ function main(;end_t = nothing,
     saveobs(saved_file, obs)
     @info "Observer data saved to $(saved_file)"
     
+    saved_file = joinpath(output_folder, "probes.jld")
+    time = (0:nsteps - 1) .* mesh.dt
+    saveprobes(saved_file, probe_locations, time, prob)
+    
+    @info "Observer data saved to $(saved_file)"
     return (;mesh, fields, obs)
 end
 
@@ -174,6 +188,19 @@ function crop_electron_density!(fields, mesh, min_relax_time)
     @info "Cropping electron density"
     max_ne = @. fields.ngas * co.epsilon_0 / (co.elementary_charge * E_MOBILITY * min_relax_time)
     fields.ne .= min.(fields.ne, reshape(max_ne, (1, :)))
+end
+
+
+function probeinds(locs, mesh)
+    (;l, dr, dz) = mesh
+    
+    inds = map(locs) do (r, z)
+        i = l + 1 + round(Int, r / dr)
+        j = l + 1 + round(Int, z / dz)
+        return CartesianIndex(i, j)
+    end
+    
+    return inds
 end
 
 

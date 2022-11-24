@@ -38,6 +38,9 @@ struct Fields{T, AT, VT}
     bf::VT
 end
 
+Base.eltype(f::Fields{T}) where {T} = T
+
+
 """
     Initialize fields with dimensions given by `mesh` and stored in `device`.
 """ 
