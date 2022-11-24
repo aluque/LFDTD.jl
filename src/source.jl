@@ -111,6 +111,9 @@ Base.@kwdef struct SoftStep{T}
 
     "decay"
     decay::T
+
+    "plateau"
+    plateau::T = zero(decay)
 end
 
 softstep(x) = x^2 * (2 - x)^2
@@ -119,12 +122,14 @@ softstep(x) = x^2 * (2 - x)^2
     Current (cross-sectional, in A) at time `t`.
 """
 function current(source::SoftStep, t)
-    (;rise, decay, Ipeak) = source
+    (;rise, decay, plateau, Ipeak) = source
 
     if t < rise
         return Ipeak * softstep(t / rise)
-    elseif t < rise + decay
-        return Ipeak * softstep(1 - (t - rise) / decay)
+    elseif t < rise + plateau
+        return Ipeak
+    elseif t < rise + decay + plateau        
+        return Ipeak * softstep(1 - (t - rise - plateau) / decay)
     else
         return zero(Ipeak)
     end
@@ -135,9 +140,9 @@ end
     Compute the total charge transferred by a `source`.
 """
 function total_charge(source::SoftStep)
-    (;rise, decay, Ipeak) = source
+    (;rise, decay, plateau, Ipeak) = source
 
-    return 8 * Ipeak * (rise + decay) / 5
+    return Ipeak * plateau + 8 * Ipeak * (rise + decay) / 5
 end
 
 
