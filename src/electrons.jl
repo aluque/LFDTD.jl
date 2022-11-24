@@ -37,10 +37,23 @@ struct WaitSpiesElectronDensity{T <: Real}
     h::T
 end
 
-WAITSPIES_N0 = 3e7
+const WAITSPIES_N0 = 3e7
 
 """ Evaluate electron density at a given altitude. """
 (ws::WaitSpiesElectronDensity)(z) = WAITSPIES_N0 * exp(ws.q * (z - ws.h))
+
+
+"""
+    Create a Wait-Spies electron density using the electron density values (`n1`, `n2`)
+    at two altitudes (`z1`, `z2`)
+"""
+function WaitSpiesElectronDensity(z1, n1, z2, n2)
+    n0 = WAITSPIES_N0
+    q = log(n2 / n1) / (z2 - z1)
+    h = (log(n0 / n1) + log(n0 / n2)) / 2q + (z1 + z2) / 2
+
+    return WaitSpiesElectronDensity(q, h)
+end
 
 
     
