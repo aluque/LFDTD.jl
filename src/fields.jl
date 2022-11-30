@@ -168,7 +168,7 @@ function photons(mesh, fields, excrate, nquench, zmin=50 * co.kilo)
             p = (N2_FRACTION * ne[i1, j1] * ngas[j1] *
                  lookup(excrate, eabs[i1, j1] / ngas[j1] / co.Td))
             p *= nquench / (ngas[j1] + nquench)
-            photons[i, j] = p
+            photons[i1, j1] = p
         end
     end
 
