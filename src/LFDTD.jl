@@ -12,6 +12,12 @@ using Interpolations
 using CSV
 using DSP
 using ProgressMeter
+import PyPlot as plt
+try
+    plt.matplotlib.pyplot.style.use("granada")
+catch exc
+    @warn "Unable to load matplotlib style"
+end
 
 ProgressMeter.ijulia_behavior(:append)
 
@@ -40,5 +46,6 @@ include("io.jl")
 include("electrons.jl")
 include("timesteps.jl")
 include("main.jl")
+include("plot.jl")
 
 end

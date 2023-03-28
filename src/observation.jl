@@ -23,7 +23,7 @@ struct Observer{T, R <: LinRange}
         L, K, fov = promote(L, K, fov)
         T = typeof(L)
         
-        signal = zeros(eltype(τ), (length(τ), Int(num_threads())))
+        signal = zeros(eltype(τ), (length(τ), Threads.nthreads()))
         new{T, typeof(τ)}(L, K, fov, τ, signal)
     end
 end

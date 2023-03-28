@@ -49,7 +49,7 @@ function main(;end_t = nothing,
               #                   decay = 7e-6),
               
               # Filenames atmospheric profiles
-              gas_density_fname = joinpath(DATA_DIR, "earth", "stdatm.dat"),
+              gas_density_fname = joinpath(DATA_DIR, "earth", "stdatm.csv"),
               electron_density = LogInterpolatedElectronDensity(joinpath(DATA_DIR, "earth", "electrons.dat")),
               
               output_dt = 1e-4,
@@ -221,8 +221,6 @@ function advance!(fields, device, mesh, source, t)
     add_source(device, mesh, fields, source, t)
     
     # Steps time to half-integer divisions (i + 1/2 -> i + 3/2)
-
-
     update_er(device, mesh, fields)
     cpml_update_er_outer(device, mesh, fields)
 
