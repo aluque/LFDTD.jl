@@ -45,8 +45,8 @@ end
 """
 function current(source::BiGaussian, t)
     (;τ1, τ2, I0) = source
-
-    return I0 * (exp(-t^2/τ1^2) - exp(-t^2/τ2^2))
+    
+    return t < 0 ? zero(I0) : I0 * (exp(-t^2/τ1^2) - exp(-t^2/τ2^2))
 end
 
 
@@ -89,7 +89,7 @@ function current(source::BiExponential, t)
 
     I0 = current_ampl(source)
 
-    return I0 * (exp(-t/τ1) - exp(-t/τ2))
+    return t < 0 ? zero(I0) : I0 * (exp(-t/τ1) - exp(-t/τ2))
 end
 
 
@@ -121,10 +121,12 @@ softstep(x) = x^2 * (2 - x)^2
 """
     Current (cross-sectional, in A) at time `t`.
 """
-function current(source::SoftStep, t)
+function current(source::SoftStep{T}, t) where T
     (;rise, decay, plateau, Ipeak) = source
 
-    if t < rise
+    if t < 0
+        return zero(Ipeak)
+    elseif t < rise
         return Ipeak * softstep(t / rise)
     elseif t < rise + plateau
         return Ipeak
