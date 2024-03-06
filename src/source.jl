@@ -147,6 +147,11 @@ function total_charge(source::SoftStep)
     return Ipeak * plateau + 8 * Ipeak * (rise + decay) / 5
 end
 
+"""
+Delay time for the propagation up to a point at altitude `z`.
+"""
+delay(source::Union{SoftStep, BiGaussian, BiExponential}, z) = 0
+boundary(source::Union{SoftStep, BiGaussian, BiExponential}) = (source.z0, source.z1)
 
 """
    Add an on-axis source to jz
@@ -154,8 +159,7 @@ end
 function add_source(device, mesh, fields, source, t)
     (;m, n, l, dr, dz) = mesh
     (;jz) = fields
-    (;z0, z1) = source
-    Ic = current(source, t)
+    (z0, z1) = boundary(source)
     
     @batch for j in 1:n + 1
         i1 = l + 1
@@ -164,6 +168,7 @@ function add_source(device, mesh, fields, source, t)
         z = (j - 1) * dz
         
         if z0 <= z <= z1
+            Ic = current(source, t - delay(source, z))
             # The - sign is bc we use the geophysics convention.
             # a positive CG transports positive charge to the ground.
             jz[i1, j1] -= 4Ic / π / dr^2
@@ -171,3 +176,23 @@ function add_source(device, mesh, fields, source, t)
     end
 end
 
+"""
+A `SoftStep`-like propagating at a certain speed `v`.  The sign of `v` follows geophysics convention:
+if v > 0 the pulse propagates downwards from z1 to z0; if v < 0 upwards from z0 to z1.
+"""
+Base.@kwdef struct PropagatingPulse{C, T}
+    base_current::C
+    v::T
+end
+
+current(source::PropagatingPulse, t) = current(source.base_current, t)
+total_charge(source::PropagatingPulse) = total_charge(source.base_current)
+boundary(source::PropagatingPulse) = boundary(source.base_current)
+
+function delay(source::PropagatingPulse, z)
+    (;z0, z1) = source.base_current
+    (;v) = source
+    
+    zorig = v > 0 ? z1 : z0
+    return (zorig - z) / v
+end
